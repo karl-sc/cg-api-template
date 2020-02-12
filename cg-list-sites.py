@@ -1,28 +1,9 @@
 #!/usr/bin/env python
-PROGRAM_NAME = "cg-ack-alerts.py"
+PROGRAM_NAME = "cg-list-sites.py"
 PROGRAM_DESCRIPTION = """
-CloudGenix Alert Acknowledgment script
+CloudGenix script
 ---------------------------------------
 
-This script will indiscriminately acknowledge all un-acknowledged alerts present on a users system.
-
-Authentication:
-    This script will attempt to authenticate with the CloudGenix controller
-    software using an Auth Token or through interactive authentication.
-    The authentication selection process happens in the following order:
-        1) Auth Token defined via program arguments (--token or -t)
-        2) File containing the auth token via program arguments (--authtokenfile or -f)
-        3) Environment variable X_AUTH_TOKENgit add README.md
-        4) Environment variable AUTH_TOKEN
-        5) Interactive Authentication via terminal
-
-Acknowledgement Limit:
-    With the command line argument --limit or -l a user may defing the max number of alerts to ack.
-    This will set the maximum number of unacknowledged events to acknowledge. The script will
-    only acknowledge alerts in blocks of 100 per API request. The script will continue to 
-    iterate until it has attempted to acknowledge the user defined maximum. By default
-    there is no limit to how many alerts will be acknowledged and this script will loop
-    until all alerts have been acknowledged.
 
 """
 from cloudgenix import API, jd
@@ -43,11 +24,8 @@ def parse_arguments():
                     help='specify an authtoken to use for CloudGenix authentication')
     parser.add_argument('--authtokenfile', '-f', metavar='"MYTOKENFILE.TXT"', type=str, 
                     help='a file containing the authtoken')
-    parser.add_argument('--limit', '-l', metavar='NUMBER_OF_EVENTS', type=int, default=0,
-                    help='The max number of events to ack. Default 0 (UNLIMITED)')
     args = parser.parse_args()
     CLIARGS.update(vars(args)) ##ASSIGN ARGUMENTS to our DICT
-    
 
 def authenticate():
     print("AUTHENTICATING...")
