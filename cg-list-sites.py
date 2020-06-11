@@ -6,15 +6,16 @@ CloudGenix script
 
 
 """
+
+####Library Imports
 from cloudgenix import API, jd
 import os
 import sys
 import argparse
 
-CLIARGS = {}
-cgx_session = API()              #Instantiate a new CG API Session for AUTH
 
 def parse_arguments():
+    CLIARGS = {}
     parser = argparse.ArgumentParser(
         prog=PROGRAM_NAME,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -25,13 +26,15 @@ def parse_arguments():
     parser.add_argument('--authtokenfile', '-f', metavar='"MYTOKENFILE.TXT"', type=str, 
                     help='a file containing the authtoken')
     args = parser.parse_args()
-    CLIARGS.update(vars(args)) ##ASSIGN ARGUMENTS to our DICT
+    CLIARGS.update(vars(args))
+    return CLIARGS
 
-def authenticate():
+def authenticate(CLIARGS):
     print("AUTHENTICATING...")
     user_email = None
     user_password = None
     
+    sdk = API()    
     ##First attempt to use an AuthTOKEN if defined
     if CLIARGS['token']:                    #Check if AuthToken is in the CLI ARG
         CLOUDGENIX_AUTH_TOKEN = CLIARGS['token']
@@ -51,23 +54,29 @@ def authenticate():
         print("    ","Authenticating using interactive login")
     ##ATTEMPT AUTHENTICATION
     if CLOUDGENIX_AUTH_TOKEN:
-        cgx_session.interactive.use_token(CLOUDGENIX_AUTH_TOKEN)
-        if cgx_session.tenant_id is None:
+        sdk.interactive.use_token(CLOUDGENIX_AUTH_TOKEN)
+        if sdk.tenant_id is None:
             print("    ","ERROR: AUTH_TOKEN login failure, please check token.")
             sys.exit()
     else:
-        while cgx_session.tenant_id is None:
-            cgx_session.interactive.login(user_email, user_password)
+        while sdk.tenant_id is None:
+            sdk.interactive.login(user_email, user_password)
             # clear after one failed login, force relogin.
-            if not cgx_session.tenant_id:
+            if not sdk.tenant_id:
                 user_email = None
                 user_password = None            
     print("    ","SUCCESS: Authentication Complete")
+    return sdk
 
-def go():
+def logout(sdk):
+    print("Logging out")
+    sdk.get.logout()
 
+
+##########MAIN FUNCTION#############
+def go(sdk, CLIARGS):
     ####CODE GOES BELOW HERE#########
-    resp = cgx_session.get.tenants()
+    resp = sdk.get.tenants()
     if resp.cgx_status:
         tenant_name = resp.cgx_content.get("name", None)
         print("======== TENANT NAME",tenant_name,"========")
@@ -79,7 +88,7 @@ def go():
 
     site_count = 0
     
-    resp = cgx_session.get.sites()
+    resp = sdk.get.sites()
     if resp.cgx_status:
         site_list = resp.cgx_content.get("items", None)    #EVENT_LIST contains an list of all returned events
         for site in site_list:                            #Loop through each EVENT in the EVENT_LIST
@@ -93,12 +102,16 @@ def go():
         sys.exit((jd(resp)))
     ####CODE GOES ABOVE HERE#########
   
-def logout():
-    print("Logging out")
-    cgx_session.get.logout()
 
 if __name__ == "__main__":
-    parse_arguments()
-    authenticate()
-    go()
-    logout()
+    ###Get the CLI Arguments
+    CLIARGS = parse_arguments()
+    
+    ###Authenticate
+    SDK = authenticate(CLIARGS)
+    
+    ###Run Code
+    go(SDK, CLIARGS)
+
+    ###Exit Program
+    logout(SDK)
